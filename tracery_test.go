@@ -7,7 +7,8 @@ Literals
 */
 func TestFlattenLiterals(t *testing.T) {
 	t.Run("it returns empty when given an empty rule", func(t *testing.T) {
-		got := Flatten("")
+		var g Grammar
+		got := g.Flatten("")
 		want := ""
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -15,7 +16,8 @@ func TestFlattenLiterals(t *testing.T) {
 	})
 
 	t.Run("it returns a plain value when given a plain value", func(t *testing.T) {
-		got := Flatten("a")
+		var g Grammar
+		got := g.Flatten("a")
 		want := "a"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -23,7 +25,8 @@ func TestFlattenLiterals(t *testing.T) {
 	})
 
 	t.Run("it returns a plain value when given a plain unicode value", func(t *testing.T) {
-		got := Flatten("🌻")
+		var g Grammar
+		got := g.Flatten("🌻")
 		want := "🌻"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -31,7 +34,8 @@ func TestFlattenLiterals(t *testing.T) {
 	})
 
 	t.Run("it returns an escaped tag", func(t *testing.T) {
-		got := Flatten(`\#notakey\#`)
+		var g Grammar
+		got := g.Flatten(`\#notakey\#`)
 		want := "#notakey#"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -39,7 +43,8 @@ func TestFlattenLiterals(t *testing.T) {
 	})
 
 	t.Run("it returns an escaped action", func(t *testing.T) {
-		got := Flatten(`\[not:an,action\]`)
+		var g Grammar
+		got := g.Flatten(`\[not:an,action\]`)
 		want := "[not:an,action]"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -48,12 +53,13 @@ func TestFlattenLiterals(t *testing.T) {
 }
 
 /**
-Assignment and read
+Assignment and read (inline)
 */
-func TestFlattenAssignmentAndRead(t *testing.T) {
+func TestFlattenAssignmentAndReadInline(t *testing.T) {
 	// @enhance: should return error or warning when configured to
 	t.Run("it returns wrapped symbol when given a non-assigned symbol", func(t *testing.T) {
-		got := Flatten("#x#")
+		var g Grammar
+		got := g.Flatten("#x#")
 		want := "((x))"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -61,7 +67,8 @@ func TestFlattenAssignmentAndRead(t *testing.T) {
 	})
 
 	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
-		got := Flatten("[x:a]#x#")
+		var g Grammar
+		got := g.Flatten("[x:a]#x#")
 		want := "a"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -69,7 +76,8 @@ func TestFlattenAssignmentAndRead(t *testing.T) {
 	})
 
 	t.Run("it returns a literal assigned and read from a symbol twice", func(t *testing.T) {
-		got := Flatten("[x:a]#x##x#")
+		var g Grammar
+		got := g.Flatten("[x:a]#x##x#")
 		want := "aa"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -77,7 +85,8 @@ func TestFlattenAssignmentAndRead(t *testing.T) {
 	})
 
 	t.Run("it returns a literal assigned and read from a symbol before and after assignment", func(t *testing.T) {
-		got := Flatten("#x#[x:a]#x#")
+		var g Grammar
+		got := g.Flatten("#x#[x:a]#x#")
 		want := "((x))a"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
@@ -85,12 +94,61 @@ func TestFlattenAssignmentAndRead(t *testing.T) {
 	})
 
 	t.Run("it returns literals assigned and read from two symbols", func(t *testing.T) {
-		got := Flatten("[x:a][y:b]#y# #x#")
+		var g Grammar
+		got := g.Flatten("[x:a][y:b]#y# #x#")
 		want := "b a"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
+
+	// @incomplete: test for pop (unassignment)
+}
+
+func TestFlattenAssignmentAndReadContext(t *testing.T) {
+	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("x", []string{"a"})
+		got := g.Flatten("#x#")
+		want := "a"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it returns a literal assigned and read from a symbol twice", func(t *testing.T) {
+		var g Grammar
+
+		g.PushRules("x", []string{"a"})
+		got := g.Flatten("#x##x#")
+		want := "aa"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it returns a literal assigned and read from a symbol before and after local assignment", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("x", []string{"a"})
+		got := g.Flatten("#x#[x:b]#x#")
+		want := "ab"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it returns literals assigned and read from two symbols", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("x", []string{"a"})
+		g.PushRules("y", []string{"b"})
+		got := g.Flatten("#y# #x#")
+		want := "b a"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	// @incomplete: test for pop (unassignment)
 }
 
 /**

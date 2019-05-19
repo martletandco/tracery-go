@@ -2,13 +2,22 @@ package tracery
 
 import "regexp"
 
+type Grammar struct {
+	ctx map[string]string
+}
+
 // Flatten resolves a grammer tree
-func Flatten(rule string) string {
+func (g *Grammar) Flatten(rule string) string {
 	actionRe := regexp.MustCompile(`^\[(.*?):(.*?)\]`)
 	plainRe := regexp.MustCompile(`^([^\[#]+)`)
 	tagRe := regexp.MustCompile(`^#([^#]+)#`)
 
-	ctx := make(map[string]string)
+	var ctx map[string]string
+	if g.ctx != nil {
+		ctx = g.ctx
+	} else {
+		ctx = make(map[string]string)
+	}
 	out := ""
 	var index []int
 	for {
@@ -44,4 +53,15 @@ func Flatten(rule string) string {
 		}
 	}
 	return out
+}
+
+func (g *Grammar) PushRules(key string, rules []string) {
+	var ctx map[string]string
+	if g.ctx != nil {
+		ctx = g.ctx
+	} else {
+		ctx = make(map[string]string)
+	}
+	ctx[key] = rules[0]
+	g.ctx = ctx
 }
