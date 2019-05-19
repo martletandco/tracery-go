@@ -26,9 +26,10 @@ func Flatten(rule string) string {
 		if index != nil {
 			match := tagRe.FindStringSubmatch(rule[index[0]:index[1]])
 			value, ok := ctx[match[1]]
-			if ok {
-				out = out + value
+			if !ok {
+				value = "((" + match[1] + "))"
 			}
+			out = out + value
 			rule = rule[index[1]:]
 			continue
 		}

@@ -3,10 +3,9 @@ package tracery
 import "testing"
 
 /**
-Rule select
+Literals
 */
-
-func TestFlatten(t *testing.T) {
+func TestFlattenLiterals(t *testing.T) {
 	t.Run("it returns empty when given an empty rule", func(t *testing.T) {
 		got := Flatten("")
 		want := ""
@@ -23,18 +22,45 @@ func TestFlatten(t *testing.T) {
 		}
 	})
 
-	/**
-	Assignment and read
-	*/
-	t.Run("it returns empty when given a non-assigned key", func(t *testing.T) {
-		got := Flatten("#x#")
-		want := ""
+	t.Run("it returns a plain value when given a plain unicode value", func(t *testing.T) {
+		got := Flatten("🌻")
+		want := "🌻"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
 
-	t.Run("it returns a literal assigned and read from a key", func(t *testing.T) {
+	t.Run("it returns an escaped tag", func(t *testing.T) {
+		got := Flatten(`\#notakey\#`)
+		want := "#notakey#"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it returns an escaped action", func(t *testing.T) {
+		got := Flatten(`\[not:an,action\]`)
+		want := "[not:an,action]"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+}
+
+/**
+Assignment and read
+*/
+func TestFlattenAssignmentAndRead(t *testing.T) {
+	// @enhance: should return error or warning when configured to
+	t.Run("it returns wrapped symbol when given a non-assigned symbol", func(t *testing.T) {
+		got := Flatten("#x#")
+		want := "((x))"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
 		got := Flatten("[x:a]#x#")
 		want := "a"
 		if got != want {
@@ -42,7 +68,7 @@ func TestFlatten(t *testing.T) {
 		}
 	})
 
-	t.Run("it returns a literal assigned and read from a key twice", func(t *testing.T) {
+	t.Run("it returns a literal assigned and read from a symbol twice", func(t *testing.T) {
 		got := Flatten("[x:a]#x##x#")
 		want := "aa"
 		if got != want {
@@ -50,15 +76,15 @@ func TestFlatten(t *testing.T) {
 		}
 	})
 
-	t.Run("it returns a literal assigned and read from a key before and after assignment", func(t *testing.T) {
+	t.Run("it returns a literal assigned and read from a symbol before and after assignment", func(t *testing.T) {
 		got := Flatten("#x#[x:a]#x#")
-		want := "a"
+		want := "((x))a"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
 
-	t.Run("it returns literals assigned and read from two keys", func(t *testing.T) {
+	t.Run("it returns literals assigned and read from two symbols", func(t *testing.T) {
 		got := Flatten("[x:a][y:b]#y# #x#")
 		want := "b a"
 		if got != want {
@@ -66,6 +92,13 @@ func TestFlatten(t *testing.T) {
 		}
 	})
 }
+
+/**
+Rule select
+*/
+// func TestFlattenRuleSelect(t *testing.T) {
+
+// }
 
 /**
 #num# = ''// missing key
