@@ -53,9 +53,9 @@ func TestFlattenLiterals(t *testing.T) {
 }
 
 /**
-Assignment and read (inline)
+Push and read (inline)
 */
-func TestFlattenAssignmentAndReadInline(t *testing.T) {
+func TestFlattenPushAndReadInline(t *testing.T) {
 	// @enhance: should return error or warning when configured to
 	t.Run("it returns wrapped symbol when given a non-assigned symbol", func(t *testing.T) {
 		var g Grammar
@@ -101,11 +101,9 @@ func TestFlattenAssignmentAndReadInline(t *testing.T) {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
-
-	// @incomplete: test for pop (unassignment)
 }
 
-func TestFlattenAssignmentAndReadContext(t *testing.T) {
+func TestFlattenPushAndReadContext(t *testing.T) {
 	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
 		var g Grammar
 		g.PushRules("x", []string{"a"})
@@ -147,8 +145,18 @@ func TestFlattenAssignmentAndReadContext(t *testing.T) {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
+}
 
-	// @incomplete: test for pop (unassignment)
+func TestFlattenPop(t *testing.T) {
+	t.Run("it returns the original value of a symbol after it's popped", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("x", []string{"a"})
+		got := g.Flatten("#x#[x:b]#x#[x:POP]#x#")
+		want := "aba"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
 }
 
 /**
@@ -180,7 +188,7 @@ CBDQ compat
 [two:4][num:1][count:#num#]#[num:3,#two#]count# = 3 | 4 // assign key inside tag
 [num:1]#[num:#num#]num# = 1 // self assignment inside tag
 
-Unassignment
+Pop
 [num:1]#num#[num:2]#num#[num:POP]#num# = 121 // Alternat sytanx for pop [num:] or [num] or [:num]?
 
 Modifiers
