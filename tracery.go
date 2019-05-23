@@ -69,7 +69,8 @@ func (g Grammar) parse(input string) Rule {
 		index = actionRe.FindStringIndex(input)
 		if index != nil {
 			match := actionRe.FindStringSubmatch(input[index[0]:index[1]])
-			rules = append(rules, PushOp{key: match[1], value: LiteralValue{value: match[2]}})
+			value := g.parse(match[2])
+			rules = append(rules, PushOp{key: match[1], value: value})
 			input = input[index[1]:]
 			continue
 		}
