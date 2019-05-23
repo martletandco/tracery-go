@@ -1,5 +1,7 @@
 package tracery
 
+import "strings"
+
 type Rule interface {
 	Resolve(ctx Context) string
 }
@@ -23,6 +25,18 @@ func (r SymbolValue) Resolve(ctx Context) string {
 	}
 
 	return value.Resolve(ctx)
+}
+
+type VariadicRule struct {
+	rules []Rule
+}
+
+func (r VariadicRule) Resolve(ctx Context) string {
+	out := []string{}
+	for _, rule := range r.rules {
+		out = append(out, rule.Resolve(ctx))
+	}
+	return strings.Join(out, "")
 }
 
 type PushOp struct {

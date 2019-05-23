@@ -106,7 +106,7 @@ func TestFlattenPushAndReadInline(t *testing.T) {
 func TestFlattenPushAndReadContext(t *testing.T) {
 	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", []string{"a"})
+		g.PushRules("x", "a")
 		got := g.Flatten("#x#")
 		want := "a"
 		if got != want {
@@ -116,8 +116,7 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns a literal assigned and read from a symbol twice", func(t *testing.T) {
 		g := NewGrammar()
-
-		g.PushRules("x", []string{"a"})
+		g.PushRules("x", "a")
 		got := g.Flatten("#x##x#")
 		want := "aa"
 		if got != want {
@@ -127,7 +126,7 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns a literal assigned and read from a symbol before and after local assignment", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", []string{"a"})
+		g.PushRules("x", "a")
 		got := g.Flatten("#x#[x:b]#x#")
 		want := "ab"
 		if got != want {
@@ -137,8 +136,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns literals assigned and read from two symbols", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", []string{"a"})
-		g.PushRules("y", []string{"b"})
+		g.PushRules("x", "a")
+		g.PushRules("y", "b")
 		got := g.Flatten("#y# #x#")
 		want := "b a"
 		if got != want {
@@ -148,8 +147,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it reads the inline value before the context value", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", []string{"2"})
-		g.PushRules("y", []string{"#x#"})
+		g.PushRules("x", "2")
+		g.PushRules("y", "#x#")
 		got := g.Flatten("[x:1]#y#")
 		want := "1"
 		if got != want {
@@ -159,8 +158,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it reads and evaluates the values in order", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("y", []string{"[y:#x#]#x#"})
-		g.PushRules("x", []string{"[x:1]#y#[x:2]"})
+		g.PushRules("y", "[y:#x#]#x#")
+		g.PushRules("x", "[x:1]#y#[x:2]")
 		got := g.Flatten("#y##y##x#")
 		want := "212"
 		// Expands to setting y = x = 1, x = 2, put x, put y, put x
@@ -174,7 +173,7 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 func TestFlattenPop(t *testing.T) {
 	t.Run("it returns the original value of a symbol after it's popped", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", []string{"a"})
+		g.PushRules("x", "a")
 		got := g.Flatten("#x#[x:b]#x#[x:POP]#x#")
 		want := "aba"
 		if got != want {

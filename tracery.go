@@ -44,7 +44,18 @@ func NewGrammar() Grammar {
 }
 
 // Flatten resolves a grammer tree
-func (g *Grammar) Flatten(rule string) string {
+func (g *Grammar) Flatten(input string) string {
+	return g.parse(input).Resolve(g.ctx)
+}
+
+func (g *Grammar) PushRules(key string, inputs ...string) {
+	for _, input := range inputs {
+		rule := g.parse(input)
+		g.ctx.Set(key, rule)
+	}
+}
+
+func (g Grammar) parse(input string) Rule {
 	actionRe := regexp.MustCompile(`^\[(.*?):(.*?)\]`)
 	plainRe := regexp.MustCompile(`^([^\[#]+)`)
 	tagRe := regexp.MustCompile(`^#([^#]+)#`)
@@ -52,40 +63,32 @@ func (g *Grammar) Flatten(rule string) string {
 	rules := []Rule{}
 	var index []int
 	for {
-		if len(rule) == 0 {
+		if len(input) == 0 {
 			break
 		}
-		index = actionRe.FindStringIndex(rule)
+		index = actionRe.FindStringIndex(input)
 		if index != nil {
-			match := actionRe.FindStringSubmatch(rule[index[0]:index[1]])
+			match := actionRe.FindStringSubmatch(input[index[0]:index[1]])
 			rules = append(rules, PushOp{key: match[1], value: LiteralValue{value: match[2]}})
-			rule = rule[index[1]:]
+			input = input[index[1]:]
 			continue
 		}
-		index = tagRe.FindStringIndex(rule)
+		index = tagRe.FindStringIndex(input)
 		if index != nil {
-			match := tagRe.FindStringSubmatch(rule[index[0]:index[1]])
+			match := tagRe.FindStringSubmatch(input[index[0]:index[1]])
 			rules = append(rules, SymbolValue{key: match[1]})
-			rule = rule[index[1]:]
+			input = input[index[1]:]
 			continue
 		}
-		index = plainRe.FindStringIndex(rule)
+		index = plainRe.FindStringIndex(input)
 		if index != nil {
-			match := plainRe.FindStringSubmatch(rule[index[0]:index[1]])
+			match := plainRe.FindStringSubmatch(input[index[0]:index[1]])
 			if match != nil {
 				rules = append(rules, LiteralValue{value: match[1]})
 			}
-			rule = rule[index[1]:]
+			input = input[index[1]:]
 			continue
 		}
 	}
-	out := ""
-	for _, _rule := range rules {
-		out = out + _rule.Resolve(g.ctx)
-	}
-	return out
-}
-
-func (g *Grammar) PushRules(key string, rules []string) {
-	g.ctx.Set(key, LiteralValue{value: rules[0]})
+	return VariadicRule{rules: rules}
 }
