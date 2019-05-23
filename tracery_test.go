@@ -145,6 +145,30 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
 	})
+
+	t.Run("it reads the inline value before the context value", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("x", []string{"2"})
+		g.PushRules("y", []string{"#x#"})
+		got := g.Flatten("[x:1]#y#")
+		want := "1"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+
+	t.Run("it reads and evaluates the values in order", func(t *testing.T) {
+		var g Grammar
+		g.PushRules("y", []string{"[y:#x#]#x#"})
+		g.PushRules("x", []string{"[x:1]#y#[x:2]"})
+		got := g.Flatten("#y##y##x#")
+		want := "212"
+		// Expands to setting y = x = 1, x = 2, put x, put y, put x
+		// [y: [x:1] [y:#x#]#x# [x:2] ]#x# #y# #x#
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
 }
 
 func TestFlattenPop(t *testing.T) {
