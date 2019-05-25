@@ -1,7 +1,11 @@
 package tracery
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
+// @rename: Might want to separate operations and value, or at least get a better term
 type Rule interface {
 	Resolve(ctx Context) string
 }
@@ -12,6 +16,9 @@ type LiteralValue struct {
 
 func (r LiteralValue) Resolve(ctx Context) string {
 	return r.value
+}
+func (r LiteralValue) String() string {
+	return fmt.Sprintf("LiteralValue<%v>", r.value)
 }
 
 type SymbolValue struct {
@@ -26,17 +33,23 @@ func (r SymbolValue) Resolve(ctx Context) string {
 
 	return value.Resolve(ctx)
 }
+func (r SymbolValue) String() string {
+	return fmt.Sprintf("SymbolValue<%v>", r.key)
+}
 
-type VariadicRule struct {
+type ListRule struct {
 	rules []Rule
 }
 
-func (r VariadicRule) Resolve(ctx Context) string {
+func (r ListRule) Resolve(ctx Context) string {
 	out := []string{}
 	for _, rule := range r.rules {
 		out = append(out, rule.Resolve(ctx))
 	}
 	return strings.Join(out, "")
+}
+func (r ListRule) String() string {
+	return fmt.Sprintf("ListRule<%d:%v>", len(r.rules), r.rules)
 }
 
 type PushOp struct {
@@ -48,4 +61,7 @@ func (r PushOp) Resolve(ctx Context) string {
 	result := r.value.Resolve(ctx)
 	ctx.Set(r.key, LiteralValue{value: result})
 	return ""
+}
+func (r PushOp) String() string {
+	return fmt.Sprintf("PushOp<%v:%v>", r.key, r.value)
 }
