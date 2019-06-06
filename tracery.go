@@ -2,7 +2,8 @@ package tracery
 
 type Context interface {
 	Lookup(key string) Rule
-	Set(key string, value Rule)
+	Push(key string, value Rule)
+	Pop(key string)
 }
 
 type MapContext struct {
@@ -21,13 +22,23 @@ func (c *MapContext) Lookup(key string) Rule {
 	}
 	return rules[len(rules)-1]
 }
-func (c *MapContext) Set(key string, value Rule) {
+func (c *MapContext) Push(key string, value Rule) {
 	rules, ok := c.value[key]
 	if !ok {
 		c.value[key] = []Rule{value}
 		return
 	}
 	c.value[key] = append(rules, value)
+}
+func (c *MapContext) Pop(key string) {
+	rules, ok := c.value[key]
+	if !ok || len(rules) == 1 {
+		// Nothing left to pop (there is a different action to clear)
+		// @enhance: warning about empty stack?
+		return
+	}
+
+	c.value[key] = rules[:len(rules)-1]
 }
 
 type Grammar struct {
@@ -49,6 +60,6 @@ func (g *Grammar) Flatten(input string) string {
 func (g *Grammar) PushRules(key string, inputs ...string) {
 	for _, input := range inputs {
 		rule := parse(input)
-		g.ctx.Set(key, rule)
+		g.ctx.Push(key, rule)
 	}
 }

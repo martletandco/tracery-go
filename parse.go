@@ -11,32 +11,24 @@ var tagRe = regexp.MustCompile(`^#([^#]+)#`)
 func parse(input string) Rule {
 
 	rules := []Rule{}
-	var index []int
+	var rule Rule
+	var newIndex int
 	for {
 		if len(input) == 0 {
 			break
 		}
-		index = actionRe.FindStringIndex(input)
-		if index != nil {
-			rule, newIndex := parseAction(input)
-			rules = append(rules, rule)
-			input = input[newIndex:]
-			continue
+		nextChr := input[0:1] // @incomplete: doesn't handle unicode properly
+		switch nextChr {
+		case "[":
+			rule, newIndex = parseAction(input)
+		case "#":
+			rule, newIndex = parseTag(input)
+		default:
+			rule, newIndex = parseLiteral(input)
 		}
-		index = tagRe.FindStringIndex(input)
-		if index != nil {
-			rule, newIndex := parseTag(input)
-			rules = append(rules, rule)
-			input = input[newIndex:]
-			continue
-		}
-		index = plainRe.FindStringIndex(input)
-		if index != nil {
-			rule, newIndex := parseLiteral(input)
-			rules = append(rules, rule)
-			input = input[newIndex:]
-			continue
-		}
+
+		rules = append(rules, rule)
+		input = input[newIndex:]
 	}
 	if len(rules) == 1 {
 		return rules[0]
@@ -47,8 +39,13 @@ func parse(input string) Rule {
 func parseAction(input string) (Rule, int) {
 	index := actionRe.FindStringIndex(input)
 	match := actionRe.FindStringSubmatch(input[index[0]:index[1]])
-	value := parse(match[2])
-	return PushOp{key: match[1], value: value}, index[1]
+	key := match[1]
+	rawValue := match[2]
+	if rawValue == "POP" {
+		return PopOp{key: key}, index[1]
+	}
+	value := parse(rawValue)
+	return PushOp{key: key, value: value}, index[1]
 }
 
 func parseTag(input string) (Rule, int) {

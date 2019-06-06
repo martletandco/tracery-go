@@ -59,9 +59,21 @@ type PushOp struct {
 
 func (r PushOp) Resolve(ctx Context) string {
 	result := r.value.Resolve(ctx)
-	ctx.Set(r.key, LiteralValue{value: result})
+	ctx.Push(r.key, LiteralValue{value: result})
 	return ""
 }
 func (r PushOp) String() string {
 	return fmt.Sprintf("PushOp<%v:%v>", r.key, r.value)
+}
+
+type PopOp struct {
+	key string
+}
+
+func (r PopOp) Resolve(ctx Context) string {
+	ctx.Pop(r.key)
+	return ""
+}
+func (r PopOp) String() string {
+	return fmt.Sprintf("PopOp<%s>", r.key)
 }

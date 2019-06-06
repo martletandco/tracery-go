@@ -173,9 +173,18 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 func TestFlattenPop(t *testing.T) {
 	t.Run("it returns the original value of a symbol after it's popped", func(t *testing.T) {
 		g := NewGrammar()
+		g.PushRules("x", "a", "b")
+		got := g.Flatten("[x:c]#x#[x:POP]#x#[x:POP]#x#")
+		want := "cba"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it ignores pop action when stack is empty", func(t *testing.T) {
+		g := NewGrammar()
 		g.PushRules("x", "a")
-		got := g.Flatten("#x#[x:b]#x#[x:POP]#x#")
-		want := "aba"
+		got := g.Flatten("#x#[x:POP]#x#")
+		want := "aa"
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
