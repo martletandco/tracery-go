@@ -1,34 +1,31 @@
 package tracery
 
 import (
-	"regexp"
+	"strings"
 )
 
-var actionRe = regexp.MustCompile(`^\[(.*?):(.*?)\]`)
-var plainRe = regexp.MustCompile(`^([^\[#]+)`)
-var tagRe = regexp.MustCompile(`^#([^#]+)#`)
-
 func parse(input string) Rule {
-
 	rules := []Rule{}
 	var rule Rule
-	var newIndex int
+	scanner := newScanner(input)
 	for {
-		if len(input) == 0 {
+		token := scanner.Peek()
+		if token.Type == EOF {
 			break
 		}
-		nextChr := input[0:1] // @incomplete: doesn't handle unicode properly
-		switch nextChr {
-		case "[":
-			rule, newIndex = parseAction(input)
-		case "#":
-			rule, newIndex = parseTag(input)
+		switch token.Type {
+		case RightBracket:
+			rule = parseAction(scanner)
+		case Octo:
+			rule = parseTag(scanner)
 		default:
-			rule, newIndex = parseLiteral(input)
+			rule = parseLiteral(scanner)
 		}
 
 		rules = append(rules, rule)
-		input = input[newIndex:]
+	}
+	if len(rules) == 0 {
+		return LiteralValue{""}
 	}
 	if len(rules) == 1 {
 		return rules[0]
@@ -36,26 +33,46 @@ func parse(input string) Rule {
 	return ListRule{rules: rules}
 }
 
-func parseAction(input string) (Rule, int) {
-	index := actionRe.FindStringIndex(input)
-	match := actionRe.FindStringSubmatch(input[index[0]:index[1]])
-	key := match[1]
-	rawValue := match[2]
-	if rawValue == "POP" {
-		return PopOp{key: key}, index[1]
+func parseAction(scanner *Scanner) Rule {
+	// @cleanup: whole lot of assume the input is valid here
+	// Consume opening [
+	scanner.Next()
+	keyToken := scanner.Next()
+	key := keyToken.Value
+	// Consume :
+	scanner.Next()
+	rawValue := scanner.Next()
+	if rawValue.Value == "POP" {
+		return PopOp{key: key}
 	}
-	value := parse(rawValue)
-	return PushOp{key: key, value: value}, index[1]
+	value := parse(rawValue.Value)
+	return PushOp{key: key, value: value}
 }
 
-func parseTag(input string) (Rule, int) {
-	index := tagRe.FindStringIndex(input)
-	match := tagRe.FindStringSubmatch(input[index[0]:index[1]])
-	return SymbolValue{key: match[1]}, index[1]
+func parseTag(scanner *Scanner) Rule {
+	// @cleanup: whole lot of assume the input is valid here
+	// Consume opening #
+	scanner.Next()
+	key := scanner.Next().Value
+	// Consume closing #
+	scanner.Next()
+	return SymbolValue{key: key}
 }
 
-func parseLiteral(input string) (Rule, int) {
-	index := plainRe.FindStringIndex(input)
-	match := plainRe.FindStringSubmatch(input[index[0]:index[1]])
-	return LiteralValue{value: match[1]}, index[1]
+func parseLiteral(scanner *Scanner) Rule {
+	var texts []string
+
+	var token Token
+Loop:
+	for {
+		token = scanner.Next()
+		switch token.Type {
+		case Text:
+			texts = append(texts, token.Value)
+		default:
+			break Loop
+		}
+	}
+	value := strings.Join(texts, ",")
+	return LiteralValue{value: value}
 }

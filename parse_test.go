@@ -10,6 +10,7 @@ func TestParseLiterals(t *testing.T) {
 		input    string
 		expected Rule
 	}{
+		{"", LiteralValue{value: ""}},
 		{"a", LiteralValue{value: "a"}},
 		{"A complete sentence, oh my.", LiteralValue{value: "A complete sentence, oh my."}},
 		{"12,3456.7890", LiteralValue{value: "12,3456.7890"}},
