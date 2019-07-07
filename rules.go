@@ -52,6 +52,18 @@ func (r ListRule) String() string {
 	return fmt.Sprintf("ListRule<%d:%v>", len(r.rules), r.rules)
 }
 
+type RandomRule struct {
+	rules []Rule
+}
+
+func (r RandomRule) Resolve(ctx Context) string {
+	i := ctx.Intn(len(r.rules))
+	return r.rules[i].Resolve(ctx)
+}
+func (r RandomRule) String() string {
+	return fmt.Sprintf("RandomRule<%d:%v>", len(r.rules), r.rules)
+}
+
 type PushOp struct {
 	key   string
 	value Rule

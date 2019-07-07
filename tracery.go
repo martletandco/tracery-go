@@ -1,17 +1,27 @@
 package tracery
 
+import (
+	"math/rand"
+	"time"
+)
+
 type Context interface {
 	Lookup(key string) Rule
 	Push(key string, value Rule)
 	Pop(key string)
+	// https://golang.org/pkg/math/rand/#Intn
+	Intn(n int) int
 }
 
 type MapContext struct {
+	Rand  *rand.Rand
 	value map[string][]Rule
 }
 
 func newMapContext() MapContext {
+	s := rand.NewSource(time.Now().Unix())
 	return MapContext{
+		Rand:  rand.New(s),
 		value: make(map[string][]Rule),
 	}
 }
@@ -39,6 +49,10 @@ func (c *MapContext) Pop(key string) {
 	}
 
 	c.value[key] = rules[:len(rules)-1]
+}
+func (c *MapContext) Intn(n int) int {
+	// incomplete: use c.Rand.Intn
+	return 0
 }
 
 type Grammar struct {

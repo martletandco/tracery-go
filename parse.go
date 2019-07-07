@@ -14,7 +14,7 @@ func parse(input string) Rule {
 			break
 		}
 		switch token.Type {
-		case RightBracket:
+		case LeftBracket:
 			rule = parseAction(scanner)
 		case Octo:
 			rule = parseTag(scanner)
@@ -41,12 +41,21 @@ func parseAction(scanner *Scanner) Rule {
 	key := keyToken.Value
 	// Consume :
 	scanner.Next()
-	rawValue := scanner.Next()
-	if rawValue.Value == "POP" {
-		return PopOp{key: key}
+	var rules []Rule
+	for {
+		rawValue := scanner.Next()
+		if rawValue.Type == RightBracket {
+			break
+		}
+		if rawValue.Value == "POP" {
+			// Consume closing ]
+			scanner.Next()
+			return PopOp{key: key}
+		}
+		rule := parse(rawValue.Value)
+		rules = append(rules, rule)
 	}
-	value := parse(rawValue.Value)
-	return PushOp{key: key, value: value}
+	return PushOp{key: key, value: RandomRule{rules: rules}}
 }
 
 func parseTag(scanner *Scanner) Rule {
@@ -67,12 +76,18 @@ Loop:
 	for {
 		token = scanner.Next()
 		switch token.Type {
-		case Word:
-			texts = append(texts, token.Value)
-		default:
+		case LeftBracket:
+			fallthrough
+		case Octo:
+			fallthrough
+		case EOF:
+			fallthrough
+		case Error:
 			break Loop
+		default:
+			texts = append(texts, token.Value)
 		}
 	}
-	value := strings.Join(texts, ",")
+	value := strings.Join(texts, "")
 	return LiteralValue{value: value}
 }
