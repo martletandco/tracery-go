@@ -8,8 +8,8 @@ func TestScanSingle(t *testing.T) {
 		expected []Token
 	}{
 		{"", []Token{Token{Type: EOF, Value: ""}}},
-		{"a", []Token{Token{Type: Text, Value: "a"}, Token{Type: EOF, Value: ""}}},
-		{"🥝", []Token{Token{Type: Text, Value: "🥝"}, Token{Type: EOF, Value: ""}}},
+		{"a", []Token{Token{Type: Word, Value: "a"}, Token{Type: EOF, Value: ""}}},
+		{"🥝", []Token{Token{Type: Word, Value: "🥝"}, Token{Type: EOF, Value: ""}}},
 		{" ", []Token{Token{Type: WhiteSpace, Value: " "}, Token{Type: EOF, Value: ""}}},
 		{"\n", []Token{Token{Type: WhiteSpace, Value: "\n"}, Token{Type: EOF, Value: ""}}},
 		{"\t", []Token{Token{Type: WhiteSpace, Value: "\t"}, Token{Type: EOF, Value: ""}}},
@@ -40,17 +40,17 @@ func TestScanSingleEscaped(t *testing.T) {
 		input    string
 		expected []Token
 	}{
-		{`\a`, []Token{Token{Type: Text, Value: `a`}, Token{Type: EOF, Value: ""}}},
-		{`\🥝`, []Token{Token{Type: Text, Value: `🥝`}, Token{Type: EOF, Value: ""}}},
-		{`\[`, []Token{Token{Type: Text, Value: `[`}, Token{Type: EOF, Value: ""}}},
-		{`\]`, []Token{Token{Type: Text, Value: `]`}, Token{Type: EOF, Value: ""}}},
-		{`\(`, []Token{Token{Type: Text, Value: `(`}, Token{Type: EOF, Value: ""}}},
-		{`\)`, []Token{Token{Type: Text, Value: `)`}, Token{Type: EOF, Value: ""}}},
+		{`\a`, []Token{Token{Type: Word, Value: `a`}, Token{Type: EOF, Value: ""}}},
+		{`\🥝`, []Token{Token{Type: Word, Value: `🥝`}, Token{Type: EOF, Value: ""}}},
+		{`\[`, []Token{Token{Type: Word, Value: `[`}, Token{Type: EOF, Value: ""}}},
+		{`\]`, []Token{Token{Type: Word, Value: `]`}, Token{Type: EOF, Value: ""}}},
+		{`\(`, []Token{Token{Type: Word, Value: `(`}, Token{Type: EOF, Value: ""}}},
+		{`\)`, []Token{Token{Type: Word, Value: `)`}, Token{Type: EOF, Value: ""}}},
 		{`\\`, []Token{Token{Type: BackStroke, Value: `\`}, Token{Type: EOF, Value: ""}}},
-		{`\:`, []Token{Token{Type: Text, Value: `:`}, Token{Type: EOF, Value: ""}}},
-		{`\,`, []Token{Token{Type: Text, Value: `,`}, Token{Type: EOF, Value: ""}}},
-		{`\#`, []Token{Token{Type: Text, Value: `#`}, Token{Type: EOF, Value: ""}}},
-		{`\.`, []Token{Token{Type: Text, Value: `.`}, Token{Type: EOF, Value: ""}}},
+		{`\:`, []Token{Token{Type: Word, Value: `:`}, Token{Type: EOF, Value: ""}}},
+		{`\,`, []Token{Token{Type: Word, Value: `,`}, Token{Type: EOF, Value: ""}}},
+		{`\#`, []Token{Token{Type: Word, Value: `#`}, Token{Type: EOF, Value: ""}}},
+		{`\.`, []Token{Token{Type: Word, Value: `.`}, Token{Type: EOF, Value: ""}}},
 	}
 
 	for _, tt := range tests {
@@ -70,10 +70,11 @@ func TestScanText(t *testing.T) {
 		input    string
 		expected []Token
 	}{
-		{" a ", []Token{Token{Type: WhiteSpace, Value: " "}, Token{Type: Text, Value: "a"}, Token{Type: WhiteSpace, Value: " "}, Token{Type: EOF, Value: ""}}},
-		{"a\nb", []Token{Token{Type: Text, Value: "a"}, Token{Type: WhiteSpace, Value: "\n"}, Token{Type: Text, Value: "b"}, Token{Type: EOF, Value: ""}}},
-		{`\[wow\]`, []Token{Token{Type: LeftBracket, Value: "[wow]"}, Token{Type: EOF, Value: ""}}},
-		{`\#wee\#`, []Token{Token{Type: Octo, Value: "#wee#"}, Token{Type: EOF, Value: ""}}},
+		{" a ", []Token{Token{Type: WhiteSpace, Value: " "}, Token{Type: Word, Value: "a"}, Token{Type: WhiteSpace, Value: " "}, Token{Type: EOF, Value: ""}}},
+		{"a b", []Token{Token{Type: Word, Value: "a"}, Token{Type: WhiteSpace, Value: " "}, Token{Type: Word, Value: "b"}, Token{Type: EOF, Value: ""}}},
+		{"a\nb", []Token{Token{Type: Word, Value: "a"}, Token{Type: WhiteSpace, Value: "\n"}, Token{Type: Word, Value: "b"}, Token{Type: EOF, Value: ""}}},
+		{`\[wow\]`, []Token{Token{Type: Word, Value: "[wow]"}, Token{Type: EOF, Value: ""}}},
+		{`\#wee\#`, []Token{Token{Type: Word, Value: "#wee#"}, Token{Type: EOF, Value: ""}}},
 	}
 
 	for _, tt := range tests {
@@ -89,23 +90,41 @@ func TestScanText(t *testing.T) {
 }
 
 func TestScanSymbol(t *testing.T) {
+	type TL []struct {
+		Type
+		string
+	}
 	var tests = []struct {
 		input    string
-		expected []Token
+		expected TL
 	}{
-		{"#a#", []Token{Token{Type: Octo, Value: "#"}, Token{Type: Identifier, Value: "a"}, Token{Type: Octo, Value: "#"}, Token{Type: EOF, Value: ""}}},
-		{"#a.b#", []Token{Token{Type: Octo, Value: "#"}, Token{Type: Identifier, Value: "a"}, Token{Type: Period, Value: "."}, Token{Type: Identifier, Value: "b"}, Token{Type: Octo, Value: "#"}, Token{Type: EOF, Value: ""}}},
-		{"#a.b()#", []Token{Token{Type: Octo, Value: "#"}, Token{Type: Identifier, Value: "a"}, Token{Type: Period, Value: "."}, Token{Type: Identifier, Value: "b"}, Token{Type: LeftParen, Value: "("}, Token{Type: RightParen, Value: ")"}, Token{Type: Octo, Value: "#"}, Token{Type: EOF, Value: ""}}},
+		{"#a#", TL{{Octo, "#"}, {Word, "a"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b.c#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {Period, "."}, {Word, "c"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b()#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b().c()#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {RightParen, ")"}, {Period, "."}, {Word, "c"}, {LeftParen, "("}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b.c()#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {Period, "."}, {Word, "c"}, {LeftParen, "("}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b().c#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {RightParen, ")"}, {Period, "."}, {Word, "c"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b(x)#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {Word, "x"}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b(x).c(y)#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {Word, "x"}, {RightParen, ")"}, {Period, "."}, {Word, "c"}, {LeftParen, "("}, {Word, "y"}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b.c(🥝)#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {Period, "."}, {Word, "c"}, {LeftParen, "("}, {Word, "🥝"}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b(z).c#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {Word, "z"}, {RightParen, ")"}, {Period, "."}, {Word, "c"}, {Octo, "#"}, {EOF, ""}}},
+		{"#a.b(#x#)#", TL{{Octo, "#"}, {Word, "a"}, {Period, "."}, {Word, "b"}, {LeftParen, "("}, {Octo, "#"}, {Word, "x"}, {Octo, "#"}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
 	}
 
 	for _, tt := range tests {
 		scanner := newScanner(tt.input)
 		for _, expected := range tt.expected {
+			expectedToken := Token{Type: expected.Type, Value: expected.string}
 			actual := scanner.Next()
-			if actual != expected {
-				t.Errorf("parse(%v): expected %v, actual %v", tt.input, expected, actual)
+			if actual != expectedToken {
+				t.Errorf("parse(%v): expected %v, actual %v", tt.input, expectedToken, actual)
 				break
 			}
 		}
 	}
 }
+
+// TestScanAction
+
+// TestScanComplex

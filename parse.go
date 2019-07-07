@@ -67,7 +67,7 @@ Loop:
 	for {
 		token = scanner.Next()
 		switch token.Type {
-		case Text:
+		case Word:
 			texts = append(texts, token.Value)
 		default:
 			break Loop
