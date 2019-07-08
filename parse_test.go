@@ -142,7 +142,7 @@ func TestParseActions(t *testing.T) {
 			{"[act:lit]", PushOp{key: "act", value: LiteralValue{value: "lit"}}},
 			{"[🥝:lit]", PushOp{key: "🥝", value: LiteralValue{value: "lit"}}},
 			{"[act:lit,lit]", PushOp{key: "act", value: RandomRule{rules: []Rule{LiteralValue{value: "lit"}, LiteralValue{value: "lit"}}}}},
-			{"[act:lit]", PushOp{key: "act", value: LiteralValue{value: "lit"}}},
+			{`[act:lit\,eral]`, PushOp{key: "act", value: LiteralValue{value: "lit,eral"}}},
 			{"[act:POP]", PopOp{key: "act"}},
 		}
 

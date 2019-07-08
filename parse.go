@@ -42,9 +42,13 @@ func parseAction(scanner *Scanner) Rule {
 	// Consume :
 	scanner.Next()
 	var rules []Rule
+
+	var ruleValue []string
 	for {
 		rawValue := scanner.Next()
 		if rawValue.Type == RightBracket {
+			rule := parse(strings.Join(ruleValue, ""))
+			rules = append(rules, rule)
 			break
 		}
 		if rawValue.Value == "POP" {
@@ -52,9 +56,22 @@ func parseAction(scanner *Scanner) Rule {
 			scanner.Next()
 			return PopOp{key: key}
 		}
-		rule := parse(rawValue.Value)
-		rules = append(rules, rule)
+		if rawValue.Type == Comma {
+			rule := parse(strings.Join(ruleValue, ""))
+			rules = append(rules, rule)
+			ruleValue = ruleValue[:0]
+			continue
+		}
+
+		ruleValue = append(ruleValue, rawValue.Value)
 	}
+	if len(rules) == 0 {
+		return PushOp{key: key, value: LiteralValue{value: ""}}
+	}
+	if len(rules) == 1 {
+		return PushOp{key: key, value: rules[0]}
+	}
+
 	return PushOp{key: key, value: RandomRule{rules: rules}}
 }
 
@@ -74,7 +91,7 @@ func parseLiteral(scanner *Scanner) Rule {
 	var token Token
 Loop:
 	for {
-		token = scanner.Next()
+		token = scanner.Peek()
 		switch token.Type {
 		case LeftBracket:
 			fallthrough
@@ -85,7 +102,7 @@ Loop:
 		case Error:
 			break Loop
 		default:
-			texts = append(texts, token.Value)
+			texts = append(texts, scanner.Next().Value)
 		}
 	}
 	value := strings.Join(texts, "")
