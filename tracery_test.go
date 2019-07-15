@@ -164,6 +164,21 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 		want := "212"
 		// Expands to setting y = x = 1, x = 2, put x, put y, put x
 		// [y: [x:1] [y:#x#]#x# [x:2] ]#x# #y# #x#
+		/* So:
+		1. #y# -> [y:#x#]#x# -- resolve y*
+			a. #y# -> [y:[x:1]#y#[x:2]]#x# -- resolve x*
+			b. #y# -> [y:(x=1)#y#[x:2]]#x# -- assign 1 to x
+			c. #y# -> [y:(x=1)[y:#x#]#x#[x:2]]#x# -- resolve y†
+			d. #y# -> [y:(x=1)(y=x{1})#x#[x:2]]#x# -- y = x (which is 1)
+			e. #y# -> [y:(x=1)(y=x{1})1[x:2]]#x# -- resolve x† (which is 1)
+			f. #y# -> [y:(x=1)(y=x{1})1(x=2)]#x# -- assign 2 to x
+			g. #y# -> [y:1]#x# -- finished resolving x*
+			h. #y# -> (y=1)#x# -- assign 1 to y
+			i. #y# -> (y=1)2 -- resolve x
+			j. #y# -> 2 -- finished resolving y*
+		2. #y# -> 1 -- resolve y (which is 1 from 1.h)
+		3. #x# -> 2 -- resolve x (which is 2 from 1.f)
+		*/
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
@@ -230,5 +245,10 @@ e.g.
 [word:word]#word.plural# = words
 [word:word]#word.upcase# = WORD
 [word:WORD]#word.upcase# = word
+Unknown modifier
+// order of resolving when applying modifiers
+count::1
+num::#count#[num:3]
+#num.join(#num#)# = 13
 
 */
