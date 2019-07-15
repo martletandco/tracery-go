@@ -21,8 +21,18 @@ func (r LiteralValue) String() string {
 	return fmt.Sprintf("LiteralValue<%v>", r.value)
 }
 
+type SymbolModifier struct {
+	key    string
+	params []Rule
+}
+
+func (r SymbolModifier) String() string {
+	return fmt.Sprintf("SymbolModifier<%v:%d:%v>", r.key, len(r.params), r.params)
+}
+
 type SymbolValue struct {
-	key string
+	key       string
+	modifiers []SymbolModifier
 }
 
 func (r SymbolValue) Resolve(ctx Context) string {
@@ -31,10 +41,26 @@ func (r SymbolValue) Resolve(ctx Context) string {
 		return "((" + r.key + "))"
 	}
 
-	return value.Resolve(ctx)
+	out := value.Resolve(ctx)
+
+	for _, mod := range r.modifiers {
+		fn := ctx.LookupModifier(mod.key)
+		if fn == nil {
+			continue
+		}
+
+		var params []string
+		for _, rule := range mod.params {
+			params = append(params, rule.Resolve(ctx))
+		}
+
+		out = fn(out, params...)
+	}
+
+	return out
 }
 func (r SymbolValue) String() string {
-	return fmt.Sprintf("SymbolValue<%v>", r.key)
+	return fmt.Sprintf("SymbolValue<%v:%d:%v>", r.key, len(r.modifiers), r.modifiers)
 }
 
 type ListRule struct {

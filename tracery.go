@@ -11,7 +11,10 @@ type Context interface {
 	Pop(key string)
 	// https://golang.org/pkg/math/rand/#Intn
 	Intn(n int) int
+	LookupModifier(key string) Modifier
 }
+
+type Modifier func(value string, params ...string) string
 
 type MapContext struct {
 	Rand  *rand.Rand
@@ -55,6 +58,10 @@ func (c *MapContext) Intn(n int) int {
 	return 0
 }
 
+func (c *MapContext) LookupModifier(key string) Modifier {
+	return nil
+}
+
 type Grammar struct {
 	ctx Context
 }
@@ -71,6 +78,7 @@ func (g *Grammar) Flatten(input string) string {
 	return parse(input).Resolve(g.ctx)
 }
 
+// @cleanup: Give this more informative name incl. target and strings
 func (g *Grammar) PushRules(key string, inputs ...string) {
 	for _, input := range inputs {
 		rule := parse(input)

@@ -10,6 +10,8 @@ func testRuleEq(a, b Rule) bool {
 		return testRandomRuleEq(v, b)
 	case PushOp:
 		return testPushOpEq(v, b)
+	case SymbolValue:
+		return testSymbolValueEq(v, b)
 	default:
 		// If this is panicing we might need a type specific comparison type
 		return a == b
@@ -35,6 +37,34 @@ func testPushOpEq(a PushOp, b Rule) bool {
 		return testRuleEq(a.value, br.value)
 	}
 	return false
+}
+
+func testSymbolValueEq(a SymbolValue, b Rule) bool {
+	if br, ok := b.(SymbolValue); ok {
+		if (a.modifiers == nil) != (br.modifiers == nil) {
+			return false
+		}
+		if len(a.modifiers) != len(br.modifiers) {
+			return false
+		}
+
+		for i := range a.modifiers {
+			if !testSymbolModifierEq(a.modifiers[i], br.modifiers[i]) {
+				return false
+			}
+		}
+
+		return true
+	}
+	return false
+}
+
+func testSymbolModifierEq(a SymbolModifier, b SymbolModifier) bool {
+	if a.key != b.key {
+		return false
+	}
+
+	return testRulesEq(a.params, b.params)
 }
 
 func testRulesEq(a, b []Rule) bool {
@@ -92,11 +122,10 @@ func TestParseSymbols(t *testing.T) {
 			{"#symBol#", SymbolValue{key: "symBol"}},
 			{"#sym_bol#", SymbolValue{key: "sym_bol"}},
 			{"#🥝#", SymbolValue{key: "🥝"}},
-			// @incomplete: Are modifiers a rule or are they a list on SymbolValue?
-			// {"#sym.mod#", SymbolValue{key: "sym"}},
-			// {"#sym.mod.mod#", SymbolValue{key: "sym"}},
-			// {"#sym.mod.mod.mod.mod.mod.mod#", SymbolValue{key: "sym"}},
-			// {"#sym.mod(param)", SymbolValue{key: "sym"}},
+			{"#sym.mod#", SymbolValue{key: "sym", modifiers: []SymbolModifier{SymbolModifier{key: "mod"}}}},
+			{"#sym.mod.mod.mod#", SymbolValue{key: "sym", modifiers: []SymbolModifier{SymbolModifier{key: "mod"}, SymbolModifier{key: "mod"}, SymbolModifier{key: "mod"}}}},
+			{"#sym.mod(param)#", SymbolValue{key: "sym", modifiers: []SymbolModifier{SymbolModifier{key: "mod", params: []Rule{LiteralValue{value: "param"}}}}}},
+			{"#sym.mod(par,am)#", SymbolValue{key: "sym", modifiers: []SymbolModifier{SymbolModifier{key: "mod", params: []Rule{LiteralValue{value: "par"}, LiteralValue{value: "am"}}}}}},
 		}
 
 		for _, tt := range tests {
@@ -121,6 +150,7 @@ func TestParseSymbols(t *testing.T) {
 			// #sym bol# -- symbols cannot contain spaces, did you mean '#sym_bol#'? -- stretch goal: suggest var name base on other key usage, e.g. snake, kebab, or cammel case
 			// #sym\.mod# -- symbols cannot contain periods, did you mean '#sym.mod#' or '#sym_mod'?
 			// #sym.# -- symbols cannot contain periods, did you mean to add a modifier or '#sym#'?
+			// #sym,sym# -- symbols cannot contain commas, did you mean '#sym-sym#'?
 		}
 
 		for _, tt := range tests {
@@ -144,6 +174,8 @@ func TestParseActions(t *testing.T) {
 			{"[act:lit,lit]", PushOp{key: "act", value: RandomRule{rules: []Rule{LiteralValue{value: "lit"}, LiteralValue{value: "lit"}}}}},
 			{`[act:lit\,eral]`, PushOp{key: "act", value: LiteralValue{value: "lit,eral"}}},
 			{"[act:POP]", PopOp{key: "act"}},
+			// @question: Can POP be escaped?
+			// {"[act:\POP]", PushOp{key: "act", value: LiteralValue{value: "POP"}}},
 		}
 
 		for _, tt := range tests {
@@ -189,6 +221,7 @@ extensions
 (rule|rule|rule) or #rule|rule|rule#
 #sym.mod(#bol#)# -- symbol as modifier param
 [act:lit|lit] -- different separator
+#a,b,c# -- random symbol
 
 questions
 [act:lit,POP] -- legal?

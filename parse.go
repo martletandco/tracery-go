@@ -80,9 +80,56 @@ func parseTag(scanner *Scanner) Rule {
 	// Consume opening #
 	scanner.Next()
 	key := scanner.Next().Value
-	// Consume closing #
+	var mods []SymbolModifier
+
+	var ruleValue []string
+	for {
+		rawValue := scanner.Next()
+		if rawValue.Type == Octo {
+			break
+		}
+		if rawValue.Type == Period {
+			mod := parseModifier(scanner)
+			mods = append(mods, mod)
+			continue
+		}
+
+		ruleValue = append(ruleValue, rawValue.Value)
+	}
+
+	return SymbolValue{key: key, modifiers: mods}
+}
+
+func parseModifier(scanner *Scanner) SymbolModifier {
+	key := scanner.Next().Value
+
+	if scanner.Peek().Type != LeftParen {
+		return SymbolModifier{key: key}
+	}
+	// Consume (
 	scanner.Next()
-	return SymbolValue{key: key}
+
+	var rules []Rule
+
+	var ruleValue []string
+	for {
+		rawValue := scanner.Next()
+		if rawValue.Type == RightParen {
+			rule := parse(strings.Join(ruleValue, ""))
+			rules = append(rules, rule)
+			break
+		}
+		if rawValue.Type == Comma {
+			rule := parse(strings.Join(ruleValue, ""))
+			rules = append(rules, rule)
+			ruleValue = ruleValue[:0]
+			continue
+		}
+
+		ruleValue = append(ruleValue, rawValue.Value)
+	}
+
+	return SymbolModifier{key: key, params: rules}
 }
 
 func parseLiteral(scanner *Scanner) Rule {
