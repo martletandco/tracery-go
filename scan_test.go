@@ -125,6 +125,55 @@ func TestScanSymbol(t *testing.T) {
 	}
 }
 
-// TestScanAction
+func TestScanAction(t *testing.T) {
+	type TL []struct {
+		Type
+		string
+	}
+	var tests = []struct {
+		input    string
+		expected TL
+	}{
+		{"[a:b]", TL{{LeftBracket, "["}, {Word, "a"}, {Colon, ":"}, {Word, "b"}, {RightBracket, "]"}, {EOF, ""}}},
+		{"[a:b,c]", TL{{LeftBracket, "["}, {Word, "a"}, {Colon, ":"}, {Word, "b"}, {Comma, ","}, {Word, "c"}, {RightBracket, "]"}, {EOF, ""}}},
+		{"[a:#b#]", TL{{LeftBracket, "["}, {Word, "a"}, {Colon, ":"}, {Octo, "#"}, {Word, "b"}, {Octo, "#"}, {RightBracket, "]"}, {EOF, ""}}},
+		{"[a:#b#,#c#]", TL{{LeftBracket, "["}, {Word, "a"}, {Colon, ":"}, {Octo, "#"}, {Word, "b"}, {Octo, "#"}, {Comma, ","}, {Octo, "#"}, {Word, "c"}, {Octo, "#"}, {RightBracket, "]"}, {EOF, ""}}},
+	}
 
-// TestScanComplex
+	for _, tt := range tests {
+		scanner := newScanner(tt.input)
+		for _, expected := range tt.expected {
+			expectedToken := Token{Type: expected.Type, Value: expected.string}
+			actual := scanner.Next()
+			if actual != expectedToken {
+				t.Errorf("parse(%v): expected %v, actual %v", tt.input, expectedToken, actual)
+				break
+			}
+		}
+	}
+}
+
+func TestScanComplex(t *testing.T) {
+	type TL []struct {
+		Type
+		string
+	}
+	var tests = []struct {
+		input    string
+		expected TL
+	}{
+		{"#[a:b]c.d(e,#f#)#", TL{{Octo, "#"}, {LeftBracket, "["}, {Word, "a"}, {Colon, ":"}, {Word, "b"}, {RightBracket, "]"}, {Word, "c"}, {Period, "."}, {Word, "d"}, {LeftParen, "("}, {Word, "e"}, {Comma, ","}, {Octo, "#"}, {Word, "f"}, {Octo, "#"}, {RightParen, ")"}, {Octo, "#"}, {EOF, ""}}},
+	}
+
+	for _, tt := range tests {
+		scanner := newScanner(tt.input)
+		for _, expected := range tt.expected {
+			expectedToken := Token{Type: expected.Type, Value: expected.string}
+			actual := scanner.Next()
+			if actual != expectedToken {
+				t.Errorf("parse(%v): expected %v, actual %v", tt.input, expectedToken, actual)
+				break
+			}
+		}
+	}
+}
