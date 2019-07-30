@@ -209,9 +209,59 @@ func TestFlattenPop(t *testing.T) {
 /**
 Rule select
 */
-// func TestFlattenRuleSelect(t *testing.T) {
-
-// }
+func TestFlattenRuleSelect(t *testing.T) {
+	t.Run("it selects a random literal rule to push", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRules("x", "[y:a,b,c]")
+		g.Rand = func(n int) int { return 0 }
+		got := g.Flatten("#x##y#")
+		want := "a"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+		g.Rand = func(n int) int { return 2 }
+		got = g.Flatten("#x##y#")
+		want = "c"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it selects a random literal or symbol rule to push", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRules("x", "[y:a,#b#]")
+		g.PushRules("b", "🥝")
+		g.Rand = func(n int) int { return 0 }
+		got := g.Flatten("#x##y#")
+		want := "a"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+		g.Rand = func(n int) int { return 1 }
+		got = g.Flatten("#x##y#")
+		want = "🥝"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it selects a random rule to push which also pushes", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRules("x", "[y:a,#b#]")
+		g.PushRules("b", "[c:🥝]")
+		g.PushRules("c", "🏔")
+		g.Rand = func(n int) int { return 0 }
+		got := g.Flatten("#c##x##y##c#")
+		want := "🏔a🏔"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+		g.Rand = func(n int) int { return 1 }
+		got = g.Flatten("#c##x##y##c#")
+		want = "🏔🥝"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+}
 
 /**
 #num# = ''// missing key
@@ -226,9 +276,10 @@ Rule select
 
 Recursion
 [num:1][count:#num#][num:#count#]#num# = 1 // overriding
-num:[#count#]; [count:#num#]#count# = ?? // ?? need to add a depth limit?
+num:#count#; [count:#num#]#count# = ((count)) // missing key
 
 CBDQ compat
+// @incomplete: add option to enable?
 [num:1][count:#num#,2]#count# = 1 | 2 // multiple assignment to key
 [num:2][count:#num#]#[num:3]count# = 3  // assign literal inside tag
 [two:4][num:1][count:#num#]#[num:#two#]count# = 4 // assign key inside tag
