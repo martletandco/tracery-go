@@ -264,6 +264,160 @@ func TestFlattenRuleSelect(t *testing.T) {
 }
 
 /**
+Modifiers
+
+Note that this tests the use of modifiers, not the standard set
+*/
+func TestFlattenModifiers(t *testing.T) {
+	assert := func(t *testing.T, got, want interface{}) {
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	}
+	t.Run("it ignores unknow or nil modifiers", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		g.AddModifier("🥝", mod)
+		got := g.Flatten("[x:a]#x.🥝##x.🍍#")
+		want := "aa((.🍍))"
+		assert(t, got, want)
+	})
+	t.Run("it passes in the symbol value", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		mod = func(value string, params ...string) string {
+			assert(t, value, "a")
+			assert(t, len(params), 0)
+
+			return "kiwifruit"
+		}
+		g.AddModifier("🥝", mod)
+		got := g.Flatten("[x:a]#x.🥝#")
+		want := "kiwifruit"
+		assert(t, got, want)
+	})
+	t.Run("it passes the result of a modifier to the next", func(t *testing.T) {
+		g := NewGrammar()
+		var mod1, mod2 ModifierFn
+		mod1 = func(value string, params ...string) string {
+			assert(t, value, "⛰")
+			assert(t, len(params), 0)
+
+			return "🏔"
+		}
+		mod2 = func(value string, params ...string) string {
+			assert(t, value, "🏔")
+			assert(t, len(params), 0)
+
+			return "🌋"
+		}
+		g.AddModifier("snow", mod1)
+		g.AddModifier("hot", mod2)
+		got := g.Flatten("[x:⛰]#x.snow.hot#")
+		want := "🌋"
+		assert(t, got, want)
+	})
+	t.Run("it passes in the symbol value and literal params", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		mod = func(value string, params ...string) string {
+			assert(t, value, "a")
+			assert(t, len(params), 4)
+			assert(t, params[0], "sugar")
+			assert(t, params[1], "egg whites")
+			assert(t, params[2], "lemon juice")
+			assert(t, params[3], "cornflour")
+
+			return "kiwifruit"
+		}
+		g.AddModifier("🥝", mod)
+		got := g.Flatten("[x:a]#x.🥝(sugar,egg whites,lemon juice,cornflour)#")
+		want := "kiwifruit"
+		assert(t, got, want)
+	})
+	t.Run("it passes in the symbol value and symbol params", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		mod = func(value string, params ...string) string {
+			assert(t, value, "a")
+			assert(t, len(params), 4)
+			assert(t, params[0], "🍯")
+			assert(t, params[1], "🥚")
+			assert(t, params[2], "🍋")
+			assert(t, params[3], "🌽🌸")
+
+			return "kiwifruit"
+		}
+		g.AddModifier("🥝", mod)
+		g.PushRules("sugar", "🍯")
+		g.PushRules("egg-whites", "🥚")
+		g.PushRules("corn", "🌽")
+		g.PushRules("flour", "🌸")
+		got := g.Flatten("[lemonjuice:🍋][x:a]#x.🥝(#sugar#,#egg-whites#,#lemonjuice#,#corn##flour#)#")
+		want := "kiwifruit"
+		assert(t, got, want)
+	})
+	t.Run("it resolves symbols from left to right", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		mod = func(value string, params ...string) string {
+			assert(t, value, "1")
+			assert(t, len(params), 1)
+			assert(t, params[0], "3")
+
+			return "13"
+		}
+		g.AddModifier("join", mod)
+		g.PushRules("count", "1")
+		g.PushRules("num", "#count#[num:3]")
+		got := g.Flatten("#num.join(#num#)#")
+		want := "13"
+		assert(t, got, want)
+	})
+	t.Run("it runs actions in params", func(t *testing.T) {
+		g := NewGrammar()
+		var mod ModifierFn
+		mod = func(value string, params ...string) string {
+			assert(t, value, "a")
+			assert(t, len(params), 5)
+			assert(t, params[0], "b")
+			assert(t, params[1], "b")
+			assert(t, params[2], "a")
+			assert(t, params[3], "")
+			assert(t, params[4], "c")
+
+			return "kiwifruit"
+		}
+		g.AddModifier("🥝", mod)
+		got := g.Flatten("[x:a]#x.🥝([x:b]#x#,#x#,[x:POP]#x#,[x:c],#x#)#")
+		want := "kiwifruit"
+		assert(t, got, want)
+	})
+	t.Run("it passes the result of a modifier as a modifier param", func(t *testing.T) {
+		g := NewGrammar()
+		var mod1, mod2 ModifierFn
+		mod1 = func(value string, params ...string) string {
+			assert(t, value, "⛰")
+			assert(t, len(params), 1)
+			assert(t, params[0], "🌋")
+
+			return "🏔"
+		}
+		mod2 = func(value string, params ...string) string {
+			assert(t, value, "🏔")
+			assert(t, len(params), 0)
+
+			return "🌋"
+		}
+		g.AddModifier("snow", mod1)
+		g.AddModifier("hot", mod2)
+		got := g.Flatten("[x:⛰][y:🏔]#x.snow(#y.hot#)#")
+		want := "🏔"
+		assert(t, got, want)
+	})
+}
+
+/**
 #num# = ''// missing key
 [num:1]#num# = 1 // assign literal
 [num:1]#num##num# = 11
@@ -289,17 +443,5 @@ CBDQ compat
 Pop
 [num:1]#num#[num:2]#num#[num:POP]#num# = 121 // Alternat sytanx for pop [num:] or [num] or [:num]?
 
-Modifiers
-e.g.
-[words:two words]#words.sentencecase# = Two words
-[words:words]#words.singliase# = word
-[word:word]#word.plural# = words
-[word:word]#word.upcase# = WORD
-[word:WORD]#word.upcase# = word
-Unknown modifier
-// order of resolving when applying modifiers
-count::1
-num::#count#[num:3]
-#num.join(#num#)# = 13
 
 */

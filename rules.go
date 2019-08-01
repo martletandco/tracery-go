@@ -44,8 +44,9 @@ func (r SymbolValue) Resolve(ctx Context) string {
 	out := value.Resolve(ctx)
 
 	for _, mod := range r.modifiers {
-		fn := ctx.LookupModifier(mod.key)
-		if fn == nil {
+		m, ok := ctx.LookupModifier(mod.key)
+		if !ok {
+			out = out + "((." + mod.key + "))"
 			continue
 		}
 
@@ -54,7 +55,7 @@ func (r SymbolValue) Resolve(ctx Context) string {
 			params = append(params, rule.Resolve(ctx))
 		}
 
-		out = fn(out, params...)
+		out = m.Modify(out, params...)
 	}
 
 	return out

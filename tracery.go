@@ -11,14 +11,30 @@ type Context interface {
 	Pop(key string)
 	// https://golang.org/pkg/math/rand/#Intn
 	Intn(n int) int
-	LookupModifier(key string) Modifier
+	LookupModifier(key string) (Modifier, bool)
 }
 
-type Modifier func(value string, params ...string) string
+type Modifier interface {
+	Modify(value string, params ...string) string
+}
+
+/** ModifierFn is provided as a convience for using plain functions as Modifiers
+ */
+type ModifierFn func(value string, params ...string) string
+
+/** Modify implements the single member of Modifier for ModifierFn
+ */
+func (f ModifierFn) Modify(value string, params ...string) string {
+	if f == nil {
+		return value
+	}
+	return f(value, params...)
+}
 
 type Grammar struct {
-	Rand  func(n int) int
-	value map[string][]Rule
+	Rand      func(n int) int
+	value     map[string][]Rule
+	modifiers map[string]Modifier
 }
 
 func NewGrammar() Grammar {
@@ -26,8 +42,9 @@ func NewGrammar() Grammar {
 	r := rand.New(s)
 
 	return Grammar{
-		Rand:  r.Intn,
-		value: make(map[string][]Rule),
+		Rand:      r.Intn,
+		value:     make(map[string][]Rule),
+		modifiers: make(map[string]Modifier),
 	}
 }
 
@@ -44,6 +61,12 @@ func (g *Grammar) PushRules(key string, inputs ...string) {
 		g.Push(key, rule)
 	}
 }
+
+func (g *Grammar) AddModifier(name string, mod Modifier) {
+	g.modifiers[name] = mod
+}
+
+// Context implementation below
 
 func (c *Grammar) Lookup(key string) Rule {
 	rules, ok := c.value[key]
@@ -74,6 +97,7 @@ func (c *Grammar) Intn(n int) int {
 	return c.Rand(n)
 }
 
-func (c *Grammar) LookupModifier(key string) Modifier {
-	return nil
+func (c *Grammar) LookupModifier(key string) (Modifier, bool) {
+	mod, ok := c.modifiers[key]
+	return mod, ok
 }
