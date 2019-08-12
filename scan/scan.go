@@ -10,7 +10,7 @@ Does not:
 
 */
 
-package tracery
+package scan
 
 import (
 	"strings"
@@ -19,14 +19,17 @@ import (
 )
 
 // Token found while scanning rules
+// @incomplete: make private
 type Token struct {
 	Type  Type
 	Value string
 }
 
 // Type of emitted token
+// @incomplete: make private
 type Type int
 
+// @incomplete: make private
 const (
 	EOF Type = iota // End of file/line
 	Error
@@ -48,6 +51,7 @@ const eof = -1
 
 type stateFunc func(*Scanner) stateFunc
 
+// @incomplete: make private
 type Scanner struct {
 	input  string
 	start  int
@@ -57,7 +61,7 @@ type Scanner struct {
 	tokens []Token
 }
 
-func newScanner(input string) *Scanner {
+func New(input string) *Scanner {
 	return &Scanner{input: input, state: lexAny, tokens: []Token{}}
 }
 

@@ -23,8 +23,8 @@ _Note that due to caching and other reasons random numbers to not really work in
 ## List of important features missing
 - Load/save to/from JSON
 - Parse errors
-- Expand for grammar debugging
-- CBDQ compatibility
+- Expand for grammar debugging*
+- CBDQ compatibility†
 - _(Probably many others that have escaped me just now)_
 
 ## List of less important but still missing features
@@ -39,3 +39,5 @@ _Note that due to caching and other reasons random numbers to not really work in
 - Mode option to support new versions or different compatibility
 - Add short hand for an in-place random selection based on `[x:1,2,3]#x#`
 
+- *Parses and 'expands' eagerly, rather than lazily as the original does, so I'm not sure the same interface works
+- †Some features are implemented, such as the _Random Push_ (i.e. `[x:1,2]`)

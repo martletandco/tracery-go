@@ -1,4 +1,4 @@
-package tracery
+package scan
 
 import "testing"
 
@@ -24,7 +24,7 @@ func TestScanSingle(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			actual := scanner.Next()
 			if actual != expected {
@@ -54,7 +54,7 @@ func TestScanSingleEscaped(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			actual := scanner.Next()
 			if actual != expected {
@@ -78,7 +78,7 @@ func TestScanText(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			actual := scanner.Next()
 			if actual != expected {
@@ -113,7 +113,7 @@ func TestScanSymbol(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			expectedToken := Token{Type: expected.Type, Value: expected.string}
 			actual := scanner.Next()
@@ -141,7 +141,7 @@ func TestScanAction(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			expectedToken := Token{Type: expected.Type, Value: expected.string}
 			actual := scanner.Next()
@@ -166,7 +166,7 @@ func TestScanComplex(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		scanner := newScanner(tt.input)
+		scanner := New(tt.input)
 		for _, expected := range tt.expected {
 			expectedToken := Token{Type: expected.Type, Value: expected.string}
 			actual := scanner.Next()
