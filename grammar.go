@@ -25,7 +25,7 @@ func NewGrammar() Grammar {
 	}
 }
 
-// Flatten resolves a grammer tree
+// Flatten resolves a grammar tree
 func (g *Grammar) Flatten(input string) string {
 	tree := parse.String(input)
 	return tree.Resolve(g)
@@ -41,6 +41,10 @@ func (g *Grammar) PushRules(key string, inputs ...string) {
 
 func (g *Grammar) AddModifier(name string, mod exec.Modifier) {
 	g.modifiers[name] = mod
+}
+
+func (g *Grammar) AddModifyFunc(name string, mod func(value string, params ...string) string) {
+	g.AddModifier(name, ModifierFunc(mod))
 }
 
 // Context implementation below

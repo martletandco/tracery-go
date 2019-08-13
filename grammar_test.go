@@ -276,7 +276,7 @@ func TestFlattenModifiers(t *testing.T) {
 	}
 	t.Run("it ignores unknow or nil modifiers", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
+		var mod ModifierFunc
 		g.AddModifier("🥝", mod)
 		got := g.Flatten("[x:a]#x.🥝##x.🍍#")
 		want := "aa((.🍍))"
@@ -284,43 +284,40 @@ func TestFlattenModifiers(t *testing.T) {
 	})
 	t.Run("it passes in the symbol value", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
-		mod = func(value string, params ...string) string {
+		mod := func(value string, params ...string) string {
 			assert(t, value, "a")
 			assert(t, len(params), 0)
 
 			return "kiwifruit"
 		}
-		g.AddModifier("🥝", mod)
+		g.AddModifier("🥝", ModifierFunc(mod))
 		got := g.Flatten("[x:a]#x.🥝#")
 		want := "kiwifruit"
 		assert(t, got, want)
 	})
 	t.Run("it passes the result of a modifier to the next", func(t *testing.T) {
 		g := NewGrammar()
-		var mod1, mod2 ModifierFn
-		mod1 = func(value string, params ...string) string {
+		mod1 := func(value string, params ...string) string {
 			assert(t, value, "⛰")
 			assert(t, len(params), 0)
 
 			return "🏔"
 		}
-		mod2 = func(value string, params ...string) string {
+		mod2 := func(value string, params ...string) string {
 			assert(t, value, "🏔")
 			assert(t, len(params), 0)
 
 			return "🌋"
 		}
-		g.AddModifier("snow", mod1)
-		g.AddModifier("hot", mod2)
+		g.AddModifier("snow", ModifierFunc(mod1))
+		g.AddModifier("hot", ModifierFunc(mod2))
 		got := g.Flatten("[x:⛰]#x.snow.hot#")
 		want := "🌋"
 		assert(t, got, want)
 	})
 	t.Run("it passes in the symbol value and literal params", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
-		mod = func(value string, params ...string) string {
+		mod := func(value string, params ...string) string {
 			assert(t, value, "a")
 			assert(t, len(params), 4)
 			assert(t, params[0], "sugar")
@@ -330,14 +327,14 @@ func TestFlattenModifiers(t *testing.T) {
 
 			return "kiwifruit"
 		}
-		g.AddModifier("🥝", mod)
+		g.AddModifyFunc("🥝", mod)
 		got := g.Flatten("[x:a]#x.🥝(sugar,egg whites,lemon juice,cornflour)#")
 		want := "kiwifruit"
 		assert(t, got, want)
 	})
 	t.Run("it passes in the symbol value and symbol params", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
+		var mod ModifierFunc
 		mod = func(value string, params ...string) string {
 			assert(t, value, "a")
 			assert(t, len(params), 4)
@@ -359,15 +356,14 @@ func TestFlattenModifiers(t *testing.T) {
 	})
 	t.Run("it resolves symbols from left to right", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
-		mod = func(value string, params ...string) string {
+		mod := func(value string, params ...string) string {
 			assert(t, value, "1")
 			assert(t, len(params), 1)
 			assert(t, params[0], "3")
 
 			return "13"
 		}
-		g.AddModifier("join", mod)
+		g.AddModifyFunc("join", mod)
 		g.PushRules("count", "1")
 		g.PushRules("num", "#count#[num:3]")
 		got := g.Flatten("#num.join(#num#)#")
@@ -376,8 +372,7 @@ func TestFlattenModifiers(t *testing.T) {
 	})
 	t.Run("it runs actions in params", func(t *testing.T) {
 		g := NewGrammar()
-		var mod ModifierFn
-		mod = func(value string, params ...string) string {
+		mod := func(value string, params ...string) string {
 			assert(t, value, "a")
 			assert(t, len(params), 5)
 			assert(t, params[0], "b")
@@ -388,29 +383,28 @@ func TestFlattenModifiers(t *testing.T) {
 
 			return "kiwifruit"
 		}
-		g.AddModifier("🥝", mod)
+		g.AddModifyFunc("🥝", mod)
 		got := g.Flatten("[x:a]#x.🥝([x:b]#x#,#x#,[x:POP]#x#,[x:c],#x#)#")
 		want := "kiwifruit"
 		assert(t, got, want)
 	})
 	t.Run("it passes the result of a modifier as a modifier param", func(t *testing.T) {
 		g := NewGrammar()
-		var mod1, mod2 ModifierFn
-		mod1 = func(value string, params ...string) string {
+		mod1 := func(value string, params ...string) string {
 			assert(t, value, "⛰")
 			assert(t, len(params), 1)
 			assert(t, params[0], "🌋")
 
 			return "🏔"
 		}
-		mod2 = func(value string, params ...string) string {
+		mod2 := func(value string, params ...string) string {
 			assert(t, value, "🏔")
 			assert(t, len(params), 0)
 
 			return "🌋"
 		}
-		g.AddModifier("snow", mod1)
-		g.AddModifier("hot", mod2)
+		g.AddModifyFunc("snow", mod1)
+		g.AddModifyFunc("hot", mod2)
 		got := g.Flatten("[x:⛰][y:🏔]#x.snow(#y.hot#)#")
 		want := "🏔"
 		assert(t, got, want)

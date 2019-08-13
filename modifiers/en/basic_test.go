@@ -25,7 +25,7 @@ func TestAppendIndefArticle(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := AppendIndefArticle(tt.input, []string{})
+		actual := AppendIndefArticle(tt.input)
 		if actual != tt.expected {
 			t.Errorf("AppendIndefArticle(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 		}
@@ -44,7 +44,7 @@ func TestCapitalise(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := CapitaliseFirst(tt.input, []string{})
+		actual := CapitaliseFirst(tt.input)
 		if actual != tt.expected {
 			t.Errorf("CapitaliseFirst(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 		}
@@ -64,7 +64,7 @@ func TestReplace(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		actual := Replace(tt.input, []string{tt.search, tt.replacement})
+		actual := Replace(tt.input, tt.search, tt.replacement)
 		if actual != tt.expected {
 			t.Errorf("Replace(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 		}
