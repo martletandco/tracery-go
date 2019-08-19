@@ -31,11 +31,22 @@ func (g *Grammar) Flatten(input string) string {
 	return tree.Resolve(g)
 }
 
-// @cleanup: Give this more informative name incl. target and strings
-func (g *Grammar) PushRules(key string, inputs ...string) {
-	for _, input := range inputs {
-		rule := parse.String(input)
-		g.Push(key, rule)
+/** PushRule pushes a rule to a symbol. If more than one rule is supplied then one
+ * will be selected at random. This is provided as no convient language level sytnax
+ * exists in Tracery to do this. Usually it's done at the JSON/RuleSet level
+ */
+func (g *Grammar) PushRule(key string, rules ...string) {
+	op := parse.Strings(rules)
+	g.Push(key, op)
+}
+
+/** PushRules differs from PushRule in that multiple rules will be treated as
+ * separate and not collapse into a Select
+ */
+func (g *Grammar) PushRules(key string, rules ...string) {
+	for _, rule := range rules {
+		op := parse.String(rule)
+		g.Push(key, op)
 	}
 }
 

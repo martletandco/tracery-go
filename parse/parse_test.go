@@ -52,7 +52,7 @@ func TestParseLiterals(t *testing.T) {
 	for _, tt := range tests {
 		actual := String(tt.input)
 		if !testRuleEq(actual, tt.expected) {
-			t.Errorf("parse(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+			t.Errorf("String(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 		}
 	}
 }
@@ -76,7 +76,7 @@ func TestParseSymbols(t *testing.T) {
 		for _, tt := range tests {
 			actual := String(tt.input)
 			if !testRuleEq(actual, tt.expected) {
-				t.Errorf("parse(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+				t.Errorf("String(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 			}
 		}
 	})
@@ -101,7 +101,7 @@ func TestParseSymbols(t *testing.T) {
 		for _, tt := range tests {
 			actual := String(tt.input)
 			if !testRuleEq(actual, tt.expected) {
-				t.Errorf("parse(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+				t.Errorf("String(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 			}
 		}
 	})
@@ -126,7 +126,7 @@ func TestParseActions(t *testing.T) {
 		for _, tt := range tests {
 			actual := String(tt.input)
 			if !testRuleEq(actual, tt.expected) {
-				t.Errorf("parse(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+				t.Errorf("String(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 			}
 		}
 	})
@@ -148,7 +148,42 @@ func TestParseActions(t *testing.T) {
 		for _, tt := range tests {
 			actual := String(tt.input)
 			if !testRuleEq(actual, tt.expected) {
-				t.Errorf("parse(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+				t.Errorf("String(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+			}
+		}
+	})
+}
+
+func TestParseMultiple(t *testing.T) {
+	t.Run("valid inputs", func(t *testing.T) {
+		var tests = []struct {
+			input    []string
+			expected exec.Operation
+		}{
+			{[]string{}, exec.NewLiteral("")},
+			{[]string{"a"}, exec.NewLiteral("a")},
+			{[]string{"a", "b"}, exec.NewSelect([]exec.Operation{exec.NewLiteral("a"), exec.NewLiteral("b")})},
+		}
+
+		for _, tt := range tests {
+			actual := Strings(tt.input)
+			if !testRuleEq(actual, tt.expected) {
+				t.Errorf("Strings(%v): expected %v, actual %v", tt.input, tt.expected, actual)
+			}
+		}
+	})
+	t.Run("inputs which should error", func(t *testing.T) {
+		var tests = []struct {
+			input    []string
+			expected exec.Operation
+		}{
+			// @incomplete: change func and test signature to include an error
+		}
+
+		for _, tt := range tests {
+			actual := Strings(tt.input)
+			if !testRuleEq(actual, tt.expected) {
+				t.Errorf("Strings(%v): expected %v, actual %v", tt.input, tt.expected, actual)
 			}
 		}
 	})

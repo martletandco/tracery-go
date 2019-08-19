@@ -8,8 +8,8 @@ import (
 )
 
 func String(input string) exec.Operation {
-	rules := []exec.Operation{}
-	var rule exec.Operation
+	ops := []exec.Operation{}
+	var op exec.Operation
 	scanner := scan.New(input)
 	for {
 		token := scanner.Peek()
@@ -18,22 +18,43 @@ func String(input string) exec.Operation {
 		}
 		switch token.Type {
 		case scan.LeftBracket:
-			rule = parseAction(scanner)
+			op = parseAction(scanner)
 		case scan.Octo:
-			rule = parseTag(scanner)
+			op = parseTag(scanner)
 		default:
-			rule = parseLiteral(scanner)
+			op = parseLiteral(scanner)
 		}
 
-		rules = append(rules, rule)
+		ops = append(ops, op)
 	}
-	if len(rules) == 0 {
+	if len(ops) == 0 {
 		return exec.NewLiteral("")
 	}
-	if len(rules) == 1 {
-		return rules[0]
+	if len(ops) == 1 {
+		return ops[0]
 	}
-	return exec.NewConcat(rules)
+	return exec.NewConcat(ops)
+}
+
+// Strings takes a list of inputs and always returns a single operation
+// More than one rule will return a Select (similar to a multi-push rule)
+// Less then one will return an empty Literal
+func Strings(inputs []string) exec.Operation {
+	ops := []exec.Operation{}
+
+	for _, input := range inputs {
+		op := String(input)
+		ops = append(ops, op)
+	}
+
+	if len(ops) == 0 {
+		return exec.NewLiteral("")
+	}
+	if len(ops) == 1 {
+		return ops[0]
+	}
+
+	return exec.NewSelect(ops)
 }
 
 func parseAction(s *scan.Scanner) exec.Operation {
@@ -44,14 +65,14 @@ func parseAction(s *scan.Scanner) exec.Operation {
 	key := keyToken.Value
 	// Consume :
 	s.Next()
-	var rules []exec.Operation
+	var ops []exec.Operation
 
-	var ruleValue []string
+	var ruleParts []string
 	for {
 		rawValue := s.Next()
 		if rawValue.Type == scan.RightBracket {
-			rule := String(strings.Join(ruleValue, ""))
-			rules = append(rules, rule)
+			op := String(strings.Join(ruleParts, ""))
+			ops = append(ops, op)
 			break
 		}
 		if rawValue.Value == "POP" {
@@ -60,22 +81,22 @@ func parseAction(s *scan.Scanner) exec.Operation {
 			return exec.NewPop(key)
 		}
 		if rawValue.Type == scan.Comma {
-			rule := String(strings.Join(ruleValue, ""))
-			rules = append(rules, rule)
-			ruleValue = ruleValue[:0]
+			op := String(strings.Join(ruleParts, ""))
+			ops = append(ops, op)
+			ruleParts = ruleParts[:0]
 			continue
 		}
 
-		ruleValue = append(ruleValue, rawValue.Value)
+		ruleParts = append(ruleParts, rawValue.Value)
 	}
-	if len(rules) == 0 {
+	if len(ops) == 0 {
 		return exec.NewPush(key, exec.NewLiteral(""))
 	}
-	if len(rules) == 1 {
-		return exec.NewPush(key, rules[0])
+	if len(ops) == 1 {
+		return exec.NewPush(key, ops[0])
 	}
 
-	return exec.NewPush(key, exec.NewSelect(rules))
+	return exec.NewPush(key, exec.NewSelect(ops))
 }
 
 func parseTag(s *scan.Scanner) exec.Operation {
@@ -85,7 +106,7 @@ func parseTag(s *scan.Scanner) exec.Operation {
 	key := s.Next().Value
 	var mods []exec.ModCall
 
-	var ruleValue []string
+	var ruleParts []string
 	for {
 		rawValue := s.Next()
 		if rawValue.Type == scan.Octo {
@@ -97,7 +118,7 @@ func parseTag(s *scan.Scanner) exec.Operation {
 			continue
 		}
 
-		ruleValue = append(ruleValue, rawValue.Value)
+		ruleParts = append(ruleParts, rawValue.Value)
 	}
 
 	return exec.NewSymbolWithMods(key, mods)
@@ -112,27 +133,27 @@ func parseModifier(s *scan.Scanner) exec.ModCall {
 	// Consume (
 	s.Next()
 
-	var rules []exec.Operation
+	var ops []exec.Operation
 
-	var ruleValue []string
+	var ruleParts []string
 	for {
 		rawValue := s.Next()
 		if rawValue.Type == scan.RightParen {
-			rule := String(strings.Join(ruleValue, ""))
-			rules = append(rules, rule)
+			op := String(strings.Join(ruleParts, ""))
+			ops = append(ops, op)
 			break
 		}
 		if rawValue.Type == scan.Comma {
-			rule := String(strings.Join(ruleValue, ""))
-			rules = append(rules, rule)
-			ruleValue = ruleValue[:0]
+			op := String(strings.Join(ruleParts, ""))
+			ops = append(ops, op)
+			ruleParts = ruleParts[:0]
 			continue
 		}
 
-		ruleValue = append(ruleValue, rawValue.Value)
+		ruleParts = append(ruleParts, rawValue.Value)
 	}
 
-	return exec.NewModCall(key, rules)
+	return exec.NewModCall(key, ops)
 }
 
 func parseLiteral(s *scan.Scanner) exec.Operation {

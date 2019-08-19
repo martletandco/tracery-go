@@ -106,7 +106,7 @@ func TestFlattenPushAndReadInline(t *testing.T) {
 func TestFlattenPushAndReadContext(t *testing.T) {
 	t.Run("it returns a literal assigned and read from a symbol", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "a")
+		g.PushRule("x", "a")
 		got := g.Flatten("#x#")
 		want := "a"
 		if got != want {
@@ -116,7 +116,7 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns a literal assigned and read from a symbol twice", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "a")
+		g.PushRule("x", "a")
 		got := g.Flatten("#x##x#")
 		want := "aa"
 		if got != want {
@@ -126,7 +126,7 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns a literal assigned and read from a symbol before and after local assignment", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "a")
+		g.PushRule("x", "a")
 		got := g.Flatten("#x#[x:b]#x#")
 		want := "ab"
 		if got != want {
@@ -136,8 +136,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it returns literals assigned and read from two symbols", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "a")
-		g.PushRules("y", "b")
+		g.PushRule("x", "a")
+		g.PushRule("y", "b")
 		got := g.Flatten("#y# #x#")
 		want := "b a"
 		if got != want {
@@ -147,8 +147,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it reads the inline value before the context value", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "2")
-		g.PushRules("y", "#x#")
+		g.PushRule("x", "2")
+		g.PushRule("y", "#x#")
 		got := g.Flatten("[x:1]#y#")
 		want := "1"
 		if got != want {
@@ -158,8 +158,8 @@ func TestFlattenPushAndReadContext(t *testing.T) {
 
 	t.Run("it reads and evaluates the values in order", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("y", "[y:#x#]#x#")
-		g.PushRules("x", "[x:1]#y#[x:2]")
+		g.PushRule("y", "[y:#x#]#x#")
+		g.PushRule("x", "[x:1]#y#[x:2]")
 		got := g.Flatten("#y##y##x#")
 		want := "212"
 		// Expands to setting y = x = 1, x = 2, put x, put y, put x
@@ -197,7 +197,7 @@ func TestFlattenPop(t *testing.T) {
 	})
 	t.Run("it ignores pop action when stack is empty", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "a")
+		g.PushRule("x", "a")
 		got := g.Flatten("#x#[x:POP]#x#")
 		want := "aa"
 		if got != want {
@@ -212,7 +212,7 @@ Rule select
 func TestFlattenRuleSelect(t *testing.T) {
 	t.Run("it selects a random literal rule to push", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "[y:a,b,c]")
+		g.PushRule("x", "[y:a,b,c]")
 		g.Rand = func(n int) int { return 0 }
 		got := g.Flatten("#x##y#")
 		want := "a"
@@ -228,8 +228,8 @@ func TestFlattenRuleSelect(t *testing.T) {
 	})
 	t.Run("it selects a random literal or symbol rule to push", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "[y:a,#b#]")
-		g.PushRules("b", "🥝")
+		g.PushRule("x", "[y:a,#b#]")
+		g.PushRule("b", "🥝")
 		g.Rand = func(n int) int { return 0 }
 		got := g.Flatten("#x##y#")
 		want := "a"
@@ -245,9 +245,9 @@ func TestFlattenRuleSelect(t *testing.T) {
 	})
 	t.Run("it selects a random rule to push which also pushes", func(t *testing.T) {
 		g := NewGrammar()
-		g.PushRules("x", "[y:a,#b#]")
-		g.PushRules("b", "[c:🥝]")
-		g.PushRules("c", "🏔")
+		g.PushRule("x", "[y:a,#b#]")
+		g.PushRule("b", "[c:🥝]")
+		g.PushRule("c", "🏔")
 		g.Rand = func(n int) int { return 0 }
 		got := g.Flatten("#c##x##y##c#")
 		want := "🏔a🏔"
@@ -257,6 +257,36 @@ func TestFlattenRuleSelect(t *testing.T) {
 		g.Rand = func(n int) int { return 1 }
 		got = g.Flatten("#c##x##y##c#")
 		want = "🏔🥝"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it wraps rules in a select if there are more than one", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRule("x", "a", "b", "c")
+		g.Rand = func(n int) int { return 2 }
+		got := g.Flatten("#x#")
+		want := "c"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it doesn't wrap rules in a select if there is only one", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRule("x", "a")
+		g.Rand = func(n int) int { return 2 }
+		got := g.Flatten("#x#")
+		want := "a"
+		if got != want {
+			t.Errorf("got '%s' want '%s'", got, want)
+		}
+	})
+	t.Run("it returns nothing when there are no rules", func(t *testing.T) {
+		g := NewGrammar()
+		g.PushRule("x")
+		g.Rand = func(n int) int { return 2 }
+		got := g.Flatten("#x#")
+		want := ""
 		if got != want {
 			t.Errorf("got '%s' want '%s'", got, want)
 		}
@@ -346,10 +376,10 @@ func TestFlattenModifiers(t *testing.T) {
 			return "kiwifruit"
 		}
 		g.AddModifier("🥝", mod)
-		g.PushRules("sugar", "🍯")
-		g.PushRules("egg-whites", "🥚")
-		g.PushRules("corn", "🌽")
-		g.PushRules("flour", "🌸")
+		g.PushRule("sugar", "🍯")
+		g.PushRule("egg-whites", "🥚")
+		g.PushRule("corn", "🌽")
+		g.PushRule("flour", "🌸")
 		got := g.Flatten("[lemonjuice:🍋][x:a]#x.🥝(#sugar#,#egg-whites#,#lemonjuice#,#corn##flour#)#")
 		want := "kiwifruit"
 		assert(t, got, want)
@@ -364,8 +394,8 @@ func TestFlattenModifiers(t *testing.T) {
 			return "13"
 		}
 		g.AddModifyFunc("join", mod)
-		g.PushRules("count", "1")
-		g.PushRules("num", "#count#[num:3]")
+		g.PushRule("count", "1")
+		g.PushRule("num", "#count#[num:3]")
 		got := g.Flatten("#num.join(#num#)#")
 		want := "13"
 		assert(t, got, want)
