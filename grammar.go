@@ -31,18 +31,17 @@ func (g *Grammar) Flatten(input string) string {
 	return tree.Resolve(g)
 }
 
-/** PushRule pushes a rule to a symbol. If more than one rule is supplied then one
- * will be selected at random. This is provided as no convient language level sytnax
- * exists in Tracery to do this. Usually it's done at the JSON/RuleSet level
- */
+// PushRule pushes a rule to a symbol. If more than one rule is supplied then one
+// will be selected at random. This is provided as no convient language level sytnax
+// exists in Tracery to do this. Usually it's done at the JSON/RuleSet level, i.e. as
+// JSON string arrays
 func (g *Grammar) PushRule(key string, rules ...string) {
 	op := parse.Strings(rules)
 	g.Push(key, op)
 }
 
-/** PushRules differs from PushRule in that multiple rules will be treated as
- * separate and not collapse into a Select
- */
+// PushRules differs from PushRule in that multiple rules will be treated as
+// separate and not collapse into a Select
 func (g *Grammar) PushRules(key string, rules ...string) {
 	for _, rule := range rules {
 		op := parse.String(rule)
@@ -50,10 +49,17 @@ func (g *Grammar) PushRules(key string, rules ...string) {
 	}
 }
 
+func (g *Grammar) PushRuleSet(set RuleSet) {
+	for key, rules := range set {
+		g.PushRule(key, rules...)
+	}
+}
+
 func (g *Grammar) AddModifier(name string, mod exec.Modifier) {
 	g.modifiers[name] = mod
 }
 
+// AddModifyFunc allows a function to be used directly as a modifier (via ModifierFunc)
 func (g *Grammar) AddModifyFunc(name string, mod func(value string, params ...string) string) {
 	g.AddModifier(name, ModifierFunc(mod))
 }
