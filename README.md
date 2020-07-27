@@ -3,11 +3,12 @@ An (currently incomplete) implementation of the [Tracery](http://tracery.io/) te
 
 ```
 g := tracery.NewGrammar()
-g.PushRules("animal", "[x:fox,dog,snail,whale,cow,emu]#x#")
-g.PushRules("pace", "[x:quick,slow,sluggard,rapid,brisk]#x#")
-g.PushRules("colour", "[x:brown,red,purple,orange]#x#")
-g.PushRules("disposition", "[x:lazy,alert,bored,distracted,eager]#x#")
-out := g.Flatten("The #pace# #colour# #animal# jumped over the #disposition# #animal#")
+g.PushRule("toggle", "flop")
+g.PushRule("animal", "fox", "dog", "snail", "whale", "cow", "emu")
+g.PushRule("pace", "quick", "slow", "sluggard", "rapid", "brisk")
+g.PushRule("colour", "brown", "red", "purple", "orange")
+g.PushRule("disposition", "lazy", "alert", "bored", "distracted", "eager")
+out := g.Flatten("[toggle:flip]The #pace# #colour# #animal# jumped over the #disposition# #animal# to #toggle#[toggle:POP] #toggle#")
 fmt.Println(out)
 ```
 
@@ -16,7 +17,7 @@ Outputs
 The rapid red fox jumped over the eager emu
 ```
 
-[See in the Go Playground](https://play.golang.org/p/oItZ8pOX4ZW)
+[See in the Go Playground](https://play.golang.org/p/wwn5d-L9iFC)
 
 _Note that due to caching and other reasons random numbers to not really work in the playground_
 
