@@ -2,6 +2,10 @@
 An (currently incomplete) implementation of the [Tracery](http://tracery.io/) text-expansion library by [GalaxyKate](http://www.galaxykate.com/)
 
 ```
+import "github.com/martletandco/tracery-go"
+```
+
+```
 g := tracery.NewGrammar()
 g.PushRule("toggle", "flop")
 g.PushRule("animal", "fox", "dog", "snail", "whale", "cow", "emu")
